@@ -4,29 +4,43 @@ import rclpy
 from rclpy.node import Node
 
 # import the message type to use
-from std_msgs.msg import String
+from std_msgs.msg import Int64, Bool, String
+from geometry_msgs.msg import Twist
 
+class ConstantControl(Node):
+    def __init__(self) -> None:
 
-class Publisher(Node):
-    def __init__(self):
-				# initialize base class (must happen before everything else)
-        super().__init__("Publisher_node")
-        self.get_logger().info("Publisher has been created")
-        self.pub = self.create_publisher(String, '/chatter', 10)
-        self.timer = self.create_timer(0.1, self.publish_msg)
-        self.counter = 1
+        super().__init__("constant_control")
 
-    def publish_msg(self):
-        msg = String()
-        msg.data = f"Hello {self.counter}"
-        self.pub.publish(msg)
-        self.counter += 1
+        self.cc_counter = 0
 
-def main(args=None):
-    rclpy.init(args=args)
-    publisher = Publisher()
-    rclpy.spin(publisher)
-    rclpy.shutdown()
+        self.cc_pub = self.create_publisher(Twist, "/cmd_vel", 10)
+        
+        self.cc_timer = self.create_timer(1.0, self.cc_callback)
+        
+        self.cc_emergency = self.create_subscription(Bool, "/kill", self.cc_emergency_callback, 10)
 
+    def cc_callback(self) -> None:
+
+        msg = Twist()  
+        msg.linear.x = 1.0  
+        msg.angular.z = 0.5 
+
+        self.cc_pub.publish(msg)
+
+        self.cc_counter += 1
+
+    def cc_emergency_callback(self, msg: Bool) -> None:
+        self.cc_timer.cancel()       
+        msg = Twist()
+        msg.linear.x = 0.0
+        msg.angular.z = 0.0
+        self.cc_pub.publish(msg)
+        print("Emergency stop.")
+
+        
 if __name__ == "__main__":
-   main()
+    rclpy.init()        # initialize ROS2 context (must run before any other rclpy call)
+    node = ConstantControl()  # instantiate the node
+    rclpy.spin(node)    # Use ROS2 built-in schedular for executing the node
+    rclpy.shutdown()    # cleanly shutdown ROS2 context
