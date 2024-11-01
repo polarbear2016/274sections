@@ -16,15 +16,15 @@ class ConstantControl(Node):
 
         self.cc_pub = self.create_publisher(Twist, "/cmd_vel", 10)
         
-        self.cc_timer = self.create_timer(1.0, self.cc_callback)
+        self.cc_timer = self.create_timer(0.2, self.cc_callback)
         
         self.cc_emergency = self.create_subscription(Bool, "/kill", self.cc_emergency_callback, 10)
 
     def cc_callback(self) -> None:
 
         msg = Twist()  
-        msg.linear.x = 1.0  
-        msg.angular.z = 0.5 
+        msg.linear.x = 0.1  
+        msg.angular.z = 0.1 
 
         self.cc_pub.publish(msg)
 
